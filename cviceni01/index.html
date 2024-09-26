@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="cs">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Martin Šimon PG1 cv01 - RGB to Grayscale and Channels</title>
+    <style>
+      canvas {
+        margin: 10px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>canvas1</h1>
+    <canvas id="canvas1" width="512" height="512"></canvas>
+    <h1>canvas2</h1>
+    <canvas id="canvas2" width="512" height="512"></canvas>
+    <h1>canvas3</h1>
+    <canvas id="canvas3" width="512" height="512"></canvas>
+    <h1>canvas4</h1>
+    <canvas id="canvas4" width="512" height="512"></canvas>
+    <h1>canvas5</h1>
+    <canvas id="canvas5" width="512" height="512"></canvas>
+
+    <script type="text/javascript">
+      window.onload = function () {
+        const imgSrc = "./lena.png"; // cesta k obrázku
+
+        function loadImage(callback) {
+          var img = new Image();
+          img.src = imgSrc;
+          img.onload = function () {
+            callback(img);
+          };
+        }
+
+        function drawOriginalImage(img) {
+          var canvas = document.getElementById("canvas1");
+          var context = canvas.getContext("2d");
+          context.drawImage(img, 0, 0);
+        }
+
+        //CANVAS 2
+        function drawGrayscaleAverage(img) {
+          var canvas = document.getElementById("canvas2");
+          var context = canvas.getContext("2d");
+          context.drawImage(img, 0, 0);
+          var imageData = context.getImageData(
+            0,
+            0,
+            canvas.width,
+            canvas.height
+          );
+          var data = imageData.data;
+
+          // Převod do šedotónové pomocí průměrování
+          for (var i = 0; i < data.length; i += 4) {
+            var avg = (data[i] + data[i + 1] + data[i + 2]) / 3;
+            data[i] = avg; // Red
+            data[i + 1] = avg; // Green
+            data[i + 2] = avg; // Blue
+          }
+          context.putImageData(imageData, 0, 0);
+        }
+
+        //CANVAS 3
+        function drawGrayscaleWeighted(img) {
+          var canvas = document.getElementById("canvas3");
+          var context = canvas.getContext("2d");
+          context.drawImage(img, 0, 0);
+          var imageData = context.getImageData(
+            0,
+            0,
+            canvas.width,
+            canvas.height
+          );
+          var data = imageData.data;
+
+          // Převod do šedotónové podle citlivosti lidského oka (0.2126*R, 0.7152*G, 0.0722*B) - viz vzorec z přednášky
+          for (var i = 0; i < data.length; i += 4) {
+            var weightedGray =
+              0.2126 * data[i] + 0.7152 * data[i + 1] + 0.0722 * data[i + 2];
+            data[i] = weightedGray;
+            data[i + 1] = weightedGray;
+            data[i + 2] = weightedGray;
+          }
+          context.putImageData(imageData, 0, 0);
+        }
+
+        //CANVAS 4
+        function drawRGBAChannels(img) {
+          var canvas = document.getElementById("canvas4");
+          var context = canvas.getContext("2d");
+          context.drawImage(img, 0, 0, canvas.width, canvas.height); // Přizpůsobení obrázku na celý canvas
+          var imageData = context.getImageData(
+            0,
+            0,
+            canvas.width,
+            canvas.height
+          );
+          var data = imageData.data;
+
+          var channelSize = canvas.width / 2; // Velikost každé miniatury
+          var channelsCanvas = document.createElement("canvas");
+          channelsCanvas.width = canvas.width / 2;
+          channelsCanvas.height = canvas.height / 2;
+          var channelContext = channelsCanvas.getContext("2d");
+
+          var rgba = ["Red", "Green", "Blue", "Alpha"];
+          for (var i = 0; i < 4; i++) {
+            var offsetX = (i % 2) * channelSize;
+            var offsetY = Math.floor(i / 2) * channelSize;
+
+            channelContext.clearRect(0, 0, channelSize, channelSize);
+
+            for (var j = 0; j < data.length; j += 4) {
+              var r = i === 0 ? data[j] : 0;
+              var g = i === 1 ? data[j + 1] : 0;
+              var b = i === 2 ? data[j + 2] : 0;
+              var a = i === 3 ? data[j + 3] : 255;
+
+              var x = (j / 4) % canvas.width;
+              var y = Math.floor(j / 4 / canvas.width);
+
+              channelContext.fillStyle = `rgba(${r},${g},${b},${a})`;
+              channelContext.fillRect(
+                (x / canvas.width) * channelSize,
+                (y / canvas.height) * channelSize,
+                1,
+                1
+              );
+            }
+            context.drawImage(
+              channelsCanvas,
+              offsetX,
+              offsetY,
+              channelSize,
+              channelSize
+            );
+          }
+        }
+        //CANVAS 5
+        function drawCMYKChannels(img) {
+          var canvas = document.getElementById("canvas5");
+          var context = canvas.getContext("2d");
+          context.drawImage(img, 0, 0, canvas.width, canvas.height); // Přizpůsobení obrázku na celý canvas
+          var imageData = context.getImageData(
+            0,
+            0,
+            canvas.width,
+            canvas.height
+          );
+          var data = imageData.data;
+
+          var channelSize = canvas.width / 2; // Velikost každé miniatury
+          var channelsCanvas = document.createElement("canvas");
+          channelsCanvas.width = canvas.width / 2;
+          channelsCanvas.height = canvas.height / 2;
+          var channelContext = channelsCanvas.getContext("2d");
+
+          // Oddělené kanály pro CMYK
+          for (var channel = 0; channel < 4; channel++) {
+            channelContext.clearRect(0, 0, channelSize, channelSize);
+
+            for (var i = 0; i < data.length; i += 4) {
+              var r = data[i] / 255;
+              var g = data[i + 1] / 255;
+              var b = data[i + 2] / 255;
+
+              var k = 1 - Math.max(r, g, b);
+              var c = (1 - r - k) / (1 - k);
+              var m = (1 - g - k) / (1 - k);
+              var y = (1 - b - k) / (1 - k);
+
+              var gray = 255 * k;
+
+              var channelColor;
+              switch (channel) {
+                case 0: // C
+                  channelColor = `rgba(${c * 255 - gray}, ${255 - gray}, ${
+                    255 - gray
+                  }, 255)`;
+                  break;
+                case 1: // M
+                  channelColor = `rgba(${255 - gray}, ${m * 255 - gray}, ${
+                    255 - gray
+                  }, 255)`;
+                  break;
+                case 2: // Y
+                  channelColor = `rgba(${255 - gray}, ${255 - gray}, ${
+                    y * 255 - gray
+                  }, 255)`;
+                  break;
+                case 3: // K
+                  channelColor = `rgba(${255 - gray}, ${255 - gray}, ${
+                    255 - gray
+                  }, 255)`;
+                  break;
+              }
+
+              var x = (i / 4) % canvas.width;
+              var y = Math.floor(i / 4 / canvas.width);
+
+              channelContext.fillStyle = channelColor;
+              channelContext.fillRect(
+                (x / canvas.width) * channelSize,
+                (y / canvas.height) * channelSize,
+                1,
+                1
+              );
+            }
+
+            var offsetX = (channel % 2) * channelSize;
+            var offsetY = Math.floor(channel / 2) * channelSize;
+            context.drawImage(
+              channelsCanvas,
+              offsetX,
+              offsetY,
+              channelSize,
+              channelSize
+            );
+          }
+        }
+
+        // Načtení obrázků a vykreslení
+        loadImage(function (img) {
+          drawOriginalImage(img);
+          drawGrayscaleAverage(img);
+          drawGrayscaleWeighted(img);
+          drawRGBAChannels(img);
+          drawCMYKChannels(img);
+        });
+      };
+    </script>
+  </body>
+</html>

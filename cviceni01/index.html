@@ -137,89 +137,85 @@
               channelSize
             );
           }
-        }
+        };
+
         //CANVAS 5
         function drawCMYKChannels(img) {
           var canvas = document.getElementById("canvas5");
           var context = canvas.getContext("2d");
-          context.drawImage(img, 0, 0, canvas.width, canvas.height); // Přizpůsobení obrázku na celý canvas
-          var imageData = context.getImageData(
-            0,
-            0,
-            canvas.width,
-            canvas.height
-          );
-          var data = imageData.data;
 
-          var channelSize = canvas.width / 2; // Velikost každé miniatury
-          var channelsCanvas = document.createElement("canvas");
-          channelsCanvas.width = canvas.width / 2;
-          channelsCanvas.height = canvas.height / 2;
-          var channelContext = channelsCanvas.getContext("2d");
+          // Vytvoření dočasného plátna pro CMYK převod
+          var tmpCanvasCMYK = document.createElement("canvas");
+          var tmpContextCMYK = tmpCanvasCMYK.getContext("2d");
+          tmpCanvasCMYK.width = 256;
+          tmpCanvasCMYK.height = 256;
 
-          // Oddělené kanály pro CMYK
-          for (var channel = 0; channel < 4; channel++) {
-            channelContext.clearRect(0, 0, channelSize, channelSize);
+          // Zmenšení původního obrázku na 256x256 pixelů
+          tmpContextCMYK.drawImage(img, 0, 0, 256, 256);
 
-            for (var i = 0; i < data.length; i += 4) {
-              var r = data[i] / 255;
-              var g = data[i + 1] / 255;
-              var b = data[i + 2] / 255;
+          // Získání pixelových dat ze zmenšeného obrázku
+          var imageDataCMYK = tmpContextCMYK.getImageData(0, 0, 256, 256);
+          var dataCMYK = imageDataCMYK.data;
 
-              var k = 1 - Math.max(r, g, b);
-              var c = (1 - r - k) / (1 - k);
-              var m = (1 - g - k) / (1 - k);
-              var y = (1 - b - k) / (1 - k);
+          // Vytvoření obrazových dat pro jednotlivé CMYK kanály
+          var imageDataCyan = tmpContextCMYK.createImageData(256, 256);
+          var imageDataMagenta = tmpContextCMYK.createImageData(256, 256);
+          var imageDataYellow = tmpContextCMYK.createImageData(256, 256);
+          var imageDataKey = tmpContextCMYK.createImageData(256, 256);
 
-              var gray = 255 * k;
+          var dataCyan = imageDataCyan.data;
+          var dataMagenta = imageDataMagenta.data;
+          var dataYellow = imageDataYellow.data;
+          var dataKey = imageDataKey.data;
 
-              var channelColor;
-              switch (channel) {
-                case 0: // C
-                  channelColor = `rgba(${c * 255 - gray}, ${255 - gray}, ${
-                    255 - gray
-                  }, 255)`;
-                  break;
-                case 1: // M
-                  channelColor = `rgba(${255 - gray}, ${m * 255 - gray}, ${
-                    255 - gray
-                  }, 255)`;
-                  break;
-                case 2: // Y
-                  channelColor = `rgba(${255 - gray}, ${255 - gray}, ${
-                    y * 255 - gray
-                  }, 255)`;
-                  break;
-                case 3: // K
-                  channelColor = `rgba(${255 - gray}, ${255 - gray}, ${
-                    255 - gray
-                  }, 255)`;
-                  break;
-              }
+          // Převod RGB na CMYK
+          for (var i = 0; i < dataCMYK.length; i += 4) {
+            var r = dataCMYK[i] / 255;
+            var g = dataCMYK[i + 1] / 255;
+            var b = dataCMYK[i + 2] / 255;
 
-              var x = (i / 4) % canvas.width;
-              var y = Math.floor(i / 4 / canvas.width);
+            // Vypočítání CMYK složek
+            var c = 1 - r;
+            var m = 1 - g;
+            var y = 1 - b;
 
-              channelContext.fillStyle = channelColor;
-              channelContext.fillRect(
-                (x / canvas.width) * channelSize,
-                (y / canvas.height) * channelSize,
-                1,
-                1
-              );
-            }
+            var k = Math.min(c, m, y); // Černá složka
+            c = c - k; // Aktualizovaná cyan složka
+            m = m - k; // Aktualizovaná magenta složka
+            y = y - k; // Aktualizovaná yellow složka
 
-            var offsetX = (channel % 2) * channelSize;
-            var offsetY = Math.floor(channel / 2) * channelSize;
-            context.drawImage(
-              channelsCanvas,
-              offsetX,
-              offsetY,
-              channelSize,
-              channelSize
-            );
+            // Cyan
+            dataCyan[i] = (1 - c) * 255; // Modrozelená složka
+            dataCyan[i + 1] = 255; // Plná zelená
+            dataCyan[i + 2] = 255; // Plná modrá
+            dataCyan[i + 3] = 255; // Alfa kanál
+
+            // Magenta
+            dataMagenta[i] = 255; // Plná červená
+            dataMagenta[i + 1] = (1 - m) * 255; // Purpurová složka
+            dataMagenta[i + 2] = 255; // Plná modrá
+            dataMagenta[i + 3] = 255; // Alfa kanál
+
+            // Yellow
+            dataYellow[i] = 255; // Plná červená
+            dataYellow[i + 1] = 255; // Plná zelená
+            dataYellow[i + 2] = (1 - y) * 255; // Žlutá složka
+            dataYellow[i + 3] = 255; // Alfa kanál
+
+            // Key (Black)
+            var blackValue = k * 255; // Hodnota černé
+            dataKey[i] = blackValue; // Černá složka
+            dataKey[i + 1] = blackValue; // Černá složka
+            dataKey[i + 2] = blackValue; // Černá složka
+            dataKey[i + 3] = 255; // Alfa kanál
           }
-        }
+
+          // Vykreslení jednotlivých CMYK kanálů do pátého plátna
+          context.putImageData(imageDataCyan, 0, 0); // Cyan - levý horní roh
+          context.putImageData(imageDataMagenta, 256, 0); // Magenta - pravý horní roh
+          context.putImageData(imageDataYellow, 0, 256); // Yellow - levý dolní roh
+          context.putImageData(imageDataKey, 256, 256); // Key (Black) - pravý dolní roh
+        };
 
         // Načtení obrázků a vykreslení
         loadImage(function (img) {

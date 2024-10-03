@@ -153,11 +153,10 @@
           // Zmenšení původního obrázku na 256x256 pixelů
           tmpContextCMYK.drawImage(img, 0, 0, 256, 256);
 
-          // Získání pixelových dat ze zmenšeného obrázku
           var imageDataCMYK = tmpContextCMYK.getImageData(0, 0, 256, 256);
           var dataCMYK = imageDataCMYK.data;
 
-          // Vytvoření obrazových dat pro jednotlivé CMYK kanály
+          // Data pro jednoltivé kanály
           var imageDataCyan = tmpContextCMYK.createImageData(256, 256);
           var imageDataMagenta = tmpContextCMYK.createImageData(256, 256);
           var imageDataYellow = tmpContextCMYK.createImageData(256, 256);
@@ -179,45 +178,45 @@
             var m = 1 - g;
             var y = 1 - b;
 
-            var k = Math.min(c, m, y); // Černá složka
-            c = c - k; // Aktualizovaná cyan složka
-            m = m - k; // Aktualizovaná magenta složka
-            y = y - k; // Aktualizovaná yellow složka
+            var k = Math.min(c, m, y); // Minimalizace hodnot C, M, Y
+            c = c - k; 
+            m = m - k; 
+            y = y - k; 
 
-            // Cyan
-            dataCyan[i] = (1 - c) * 255; // Modrozelená složka
-            dataCyan[i + 1] = 255; // Plná zelená
-            dataCyan[i + 2] = 255; // Plná modrá
-            dataCyan[i + 3] = 255; // Alfa kanál
+            // C
+            dataCyan[i] = (1 - c) * 255; 
+            dataCyan[i + 1] = 255; 
+            dataCyan[i + 2] = 255; 
+            dataCyan[i + 3] = 255; 
 
-            // Magenta
-            dataMagenta[i] = 255; // Plná červená
-            dataMagenta[i + 1] = (1 - m) * 255; // Purpurová složka
-            dataMagenta[i + 2] = 255; // Plná modrá
-            dataMagenta[i + 3] = 255; // Alfa kanál
+            // M
+            dataMagenta[i] = 255; 
+            dataMagenta[i + 1] = (1 - m) * 255; 
+            dataMagenta[i + 2] = 255; 
+            dataMagenta[i + 3] = 255; 
 
-            // Yellow
-            dataYellow[i] = 255; // Plná červená
-            dataYellow[i + 1] = 255; // Plná zelená
-            dataYellow[i + 2] = (1 - y) * 255; // Žlutá složka
-            dataYellow[i + 3] = 255; // Alfa kanál
+            // Y
+            dataYellow[i] = 255; 
+            dataYellow[i + 1] = 255; 
+            dataYellow[i + 2] = (1 - y) * 255; 
+            dataYellow[i + 3] = 255;
 
-            // Key (Black)
-            var blackValue = k * 255; // Hodnota černé
-            dataKey[i] = blackValue; // Černá složka
-            dataKey[i + 1] = blackValue; // Černá složka
-            dataKey[i + 2] = blackValue; // Černá složka
-            dataKey[i + 3] = 255; // Alfa kanál
+            // K
+            var blackValue = k * 255; 
+            dataKey[i] = blackValue; 
+            dataKey[i + 1] = blackValue; 
+            dataKey[i + 2] = blackValue; 
+            dataKey[i + 3] = 255; 
           }
 
-          // Vykreslení jednotlivých CMYK kanálů do pátého plátna
-          context.putImageData(imageDataCyan, 0, 0); // Cyan - levý horní roh
-          context.putImageData(imageDataMagenta, 256, 0); // Magenta - pravý horní roh
-          context.putImageData(imageDataYellow, 0, 256); // Yellow - levý dolní roh
-          context.putImageData(imageDataKey, 256, 256); // Key (Black) - pravý dolní roh
+          // Vykreslení jednotlivých CMYK kanálů
+          context.putImageData(imageDataCyan, 0, 0); 
+          context.putImageData(imageDataMagenta, 256, 0); 
+          context.putImageData(imageDataYellow, 0, 256); 
+          context.putImageData(imageDataKey, 256, 256);
         };
 
-        // Načtení obrázků a vykreslení
+        // Load a print obrázků
         loadImage(function (img) {
           drawOriginalImage(img);
           drawGrayscaleAverage(img);

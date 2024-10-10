@@ -16,9 +16,18 @@
     <input type="file" id="file" onchange="handleFileSelect(this, 'logo')" name="files[]"/>
 	<label for="precision">Přesnost v procentech:</label>
 	<input type="number" id="precision" name="precision" min="0" max="100" value="40">
-	<button type="button" id="convert" disabled>Convert</button>
+    
+    <!-- vstup pro výběr barvy pozadí -->
+    <label for="bgColor">Barva pozadí:</label>
+    <input type="color" id="bgColor" name="bgColor" value="#4efc2d">
+
+    <!-- vstup pro toleranci klíčování -->
+    <label for="tolerance">Tolerance klíčování:</label>
+    <input type="number" id="tolerance" name="tolerance" min="0" max="255" value="50">
+    
+    <button type="button" id="convert" disabled>Convert</button>
 </body>
 
 <script type="text/javascript" src="./script.js"></script>
 
-</html>                                          
+</html>

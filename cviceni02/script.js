@@ -73,21 +73,44 @@ function convertImageData(personImageData, backgroundImageData, logoImageData, r
     var backgroundData = backgroundImageData.data;
     var logoData = logoImageData.data;
     var resultData = resultImageData.data;
+    //nove promenne
+    var prahPersonData=personImageData.data;
+    var gsLogoData=logoImageData.data;
 
-    // Go through the image using x,y coordinates
-    var red, green, blue, alpha;
+    // prahování
+    var red, green, blue, g, gsVal;
+    var precision = document.getElementById("precision").value/100;
     for (var pixelIndex = 0; pixelIndex < personData.length; pixelIndex += 4) {
-        red = (personData[pixelIndex + 0] + backgroundData[pixelIndex + 0] + logoData[pixelIndex + 0]) / 3;
-        green = (personData[pixelIndex + 1] + backgroundData[pixelIndex + 1] + logoData[pixelIndex + 1]) / 3;
-        blue = (personData[pixelIndex + 2] + backgroundData[pixelIndex + 2] + logoData[pixelIndex + 2]) / 3;
-        alpha = (personData[pixelIndex + 3] + backgroundData[pixelIndex + 3] + logoData[pixelIndex + 3]) / 3;
+        g=personData[pixelIndex+1]/(personData[pixelIndex+0]+personData[pixelIndex+1]+personData[pixelIndex+2]);
+        //console.log(g)
+        if (g>precision) {
+            prahPersonData[pixelIndex+3]=0;
+        }
+        //logo to grayscale
+        gsVal=((logoData[pixelIndex+0]*0.3)+(logoData[pixelIndex+1]*0.59)+(logoData[pixelIndex+2]*0.11));
+        logoData[pixelIndex+0]=gsVal;
+        logoData[pixelIndex+1]=gsVal;
+        logoData[pixelIndex+2]=gsVal;
+        
 
-        // Do magic at this place
         //console.log(red, green, blue, alpha);
+        if (gsLogoData[pixelIndex+3]>0) {
+            red=gsLogoData[pixelIndex+0];
+            green=gsLogoData[pixelIndex+1];
+            blue=gsLogoData[pixelIndex+2];
+        } else if (prahPersonData[pixelIndex+3]>0) {
+            red=prahPersonData[pixelIndex+0];
+            green=prahPersonData[pixelIndex+1];
+            blue=prahPersonData[pixelIndex+2];
+        } else {
+            red=backgroundData[pixelIndex+0];
+            green=backgroundData[pixelIndex+1];
+            blue=backgroundData[pixelIndex+2];
+        }
 
         resultData[pixelIndex + 0] = red;
         resultData[pixelIndex + 1] = green;
         resultData[pixelIndex + 2] = blue;
-        resultData[pixelIndex + 3] = alpha;
+        resultData[pixelIndex + 3] = 255;
     }
 }

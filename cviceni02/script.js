@@ -2,6 +2,8 @@
 function handleFileSelect(item, elementName) {
   var files = item.files;
 
+  console.log(files);
+
   for (var i = 0; i < files.length; i++) {
     console.log(files[i], files[i].name, files[i].size, files[i].type);
 
@@ -60,7 +62,6 @@ function convertImage() {
     canvasWidth,
     canvasHeight
   );
-
   var backgroundImageData = document
     .getElementById("background")
     .getContext("2d")
@@ -87,6 +88,74 @@ function convertImage() {
     .putImageData(resultImageData, 0, 0);
 }
 
+//calculate color distance (difference) between two colors
+function colorDistance(r1, g1, b1, r2, g2, b2) {
+  return Math.sqrt(
+    (r1 - r2) * (r1 - r2) + (g1 - g2) * (g1 - g2) + (b1 - b2) * (b1 - b2)
+  );
+}
+
+// Helper function to get logo data without alpha channel
+function getLogoData(logoImageData) {
+  var logoData = logoImageData.data;
+  var logoWidth = logoImageData.width;
+  var logoHeight = logoImageData.height;
+
+  var newWidth = 100; // Desired width of logo in result
+  var newHeight = 100; // Desired height of logo in result
+
+  // Create a new canvas for logo extraction
+  var logoCanvas = document.createElement("canvas");
+  var logoContext = logoCanvas.getContext("2d");
+  logoCanvas.width = logoWidth;
+  logoCanvas.height = logoHeight;
+
+  logoContext.putImageData(logoImageData, 0, 0);
+
+  // Find the bounding box of the non-transparent pixels
+  var minX = logoWidth,
+    minY = logoHeight,
+    maxX = 0,
+    maxY = 0;
+  for (var y = 0; y < logoHeight; y++) {
+    for (var x = 0; x < logoWidth; x++) {
+      var index = (y * logoWidth + x) * 4;
+      if (logoData[index + 3] > 0) {
+        // Check alpha channel
+        if (x < minX) minX = x;
+        if (x > maxX) maxX = x;
+        if (y < minY) minY = y;
+        if (y > maxY) maxY = y;
+      }
+    }
+  }
+
+  // Calculate logo width and height
+  var logoWidthActual = maxX - minX + 1;
+  var logoHeightActual = maxY - minY + 1;
+
+  // Extract the non-transparent portion of the logo
+  var extractedLogoData = logoContext.getImageData(
+    minX,
+    minY,
+    logoWidthActual,
+    logoHeightActual
+  );
+
+  // Create a new canvas to resize the logo to desired dimensions
+  var resizedLogoCanvas = document.createElement("canvas");
+  resizedLogoCanvas.width = newWidth;
+  resizedLogoCanvas.height = newHeight;
+  var resizedLogoContext = resizedLogoCanvas.getContext("2d");
+
+  // Draw the extracted logo on the resized canvas
+  resizedLogoContext.putImageData(extractedLogoData, 0, 0);
+  resizedLogoContext.drawImage(resizedLogoCanvas, 0, 0, newWidth, newHeight);
+
+  return resizedLogoCanvas;
+}
+
+// Function for converting raw data of image with alpha blending and keying
 function convertImageData(
   personImageData,
   backgroundImageData,
@@ -97,106 +166,81 @@ function convertImageData(
   var backgroundData = backgroundImageData.data;
   var logoData = logoImageData.data;
   var resultData = resultImageData.data;
+  var precision = document.getElementById("precision").value / 100;
 
-  // Get the picked RGB value from the color picker
-  var pickedColor = document.getElementById("bgColor").value;
-  var rPicked = parseInt(pickedColor.substr(1, 2), 16);
-  var gPicked = parseInt(pickedColor.substr(3, 2), 16);
-  var bPicked = parseInt(pickedColor.substr(5, 2), 16);
+  // selected key color
+  var keyColorInput = document.getElementById("keyColor").value;
+  var keyRed = parseInt(keyColorInput.slice(1, 3), 16);
+  var keyGreen = parseInt(keyColorInput.slice(3, 5), 16);
+  var keyBlue = parseInt(keyColorInput.slice(5, 7), 16);
 
-  // Convert picked RGB to HSV
-  var hsvPicked = rgbToHsv(rPicked, gPicked, bPicked);
-  var pickedHue = hsvPicked[0]; // Hue of the picked color
-  var pickedSaturation = hsvPicked[1]; // Saturation of the picked color
-
-  let sensitivityPercentage = Number(
-    document.getElementById("tolerance").value
-  );
-
-  // Adjust thresholds based on sensitivityPercentage
-  var hueRange = 120 * (sensitivityPercentage / 100); // 120 is a common range for hues
-  var minHue = pickedHue - hueRange / 2;
-  var maxHue = pickedHue + hueRange / 2;
-
-  var minSaturation = pickedSaturation * (sensitivityPercentage / 100);
-
+  //through each pixel
   for (var pixelIndex = 0; pixelIndex < personData.length; pixelIndex += 4) {
-    var r = personData[pixelIndex + 0];
-    var g = personData[pixelIndex + 1];
-    var b = personData[pixelIndex + 2];
-    var alpha = personData[pixelIndex + 3] / 255.0; // Normalize to 0-1 range
+    var red = personData[pixelIndex + 0];
+    var green = personData[pixelIndex + 1];
+    var blue = personData[pixelIndex + 2];
+    var alpha = personData[pixelIndex + 3];
 
-    // Get the grayscale value of the logo pixel
-    var logoR = logoData[pixelIndex + 0];
-    var logoG = logoData[pixelIndex + 1];
-    var logoB = logoData[pixelIndex + 2];
-    var logoAlpha = logoData[pixelIndex + 3] / 255.0; // Normalize to 0-1 range
+    // color distance between the current pixel and the key color
+    var dist = colorDistance(red, green, blue, keyRed, keyGreen, keyBlue);
 
-    // Convert the RGB values of the person pixel to HSV
-    var hsv = rgbToHsv(r, g, b);
-    var hue = hsv[0],
-      saturation = hsv[1];
-
-    // Calculate grayscale for logo
-    let gray = 0.299 * logoR + 0.587 * logoG + 0.114 * logoB;
-
-    // Apply thresholding for person pixels
-    var gValue = personData[pixelIndex + 1] / (personData[pixelIndex + 0] + personData[pixelIndex + 1] + personData[pixelIndex + 2]);
-    var precision = document.getElementById("precision").value / 100;
-    if (gValue > precision) {
-      personData[pixelIndex + 3] = 0; // Set alpha to 0 for thresholded pixels
+    // Remove background if the color is close to the key color
+    if (dist < 255 * precision) {
+      personData[pixelIndex + 3] = 0; // sets pixel fully transparent
     }
 
-    // If the logo pixel has opacity, render the logo in grayscale
-    if (logoAlpha > 0) {
-      resultData[pixelIndex + 0] = gray;
-      resultData[pixelIndex + 1] = gray;
-      resultData[pixelIndex + 2] = gray;
-      resultData[pixelIndex + 3] = logoAlpha * 255;
-    } else {
-      // If the pixel is part of the detected color range
-      if (hue >= minHue && hue <= maxHue && saturation >= minSaturation) {
-        // Use background pixel data
-        resultData[pixelIndex + 0] = backgroundData[pixelIndex + 0];
-        resultData[pixelIndex + 1] = backgroundData[pixelIndex + 1];
-        resultData[pixelIndex + 2] = backgroundData[pixelIndex + 2];
-        resultData[pixelIndex + 3] = 255; // Fully opaque
-      } else {
-        // Not a green screen pixel, use the person image data and blend with background
-        resultData[pixelIndex + 0] = r * alpha + backgroundData[pixelIndex + 0] * (1 - alpha);
-        resultData[pixelIndex + 1] = g * alpha + backgroundData[pixelIndex + 1] * (1 - alpha);
-        resultData[pixelIndex + 2] = b * alpha + backgroundData[pixelIndex + 2] * (1 - alpha);
-        resultData[pixelIndex + 3] = alpha * 255; // Convert back to 0-255 range
-      }
+    // Grayscale for logo
+    var gsVal =
+      logoData[pixelIndex + 0] * 0.3 +
+      logoData[pixelIndex + 1] * 0.59 +
+      logoData[pixelIndex + 2] * 0.11;
+    logoData[pixelIndex + 0] = gsVal;
+    logoData[pixelIndex + 1] = gsVal;
+    logoData[pixelIndex + 2] = gsVal;
+
+    // Alpha blending
+    var alphaPerson = personData[pixelIndex + 3] / 255;
+    var alphaBackground = 1 - alphaPerson;
+
+    // Blend foreground and background
+    red = Math.round(
+      personData[pixelIndex + 0] * alphaPerson +
+        backgroundData[pixelIndex + 0] * alphaBackground
+    );
+    green = Math.round(
+      personData[pixelIndex + 1] * alphaPerson +
+        backgroundData[pixelIndex + 1] * alphaBackground
+    );
+    blue = Math.round(
+      personData[pixelIndex + 2] * alphaPerson +
+        backgroundData[pixelIndex + 2] * alphaBackground
+    );
+
+    // Check for logo to draw on top
+    if (logoData[pixelIndex + 3] > 0) {
+      red = logoData[pixelIndex + 0];
+      green = logoData[pixelIndex + 1];
+      blue = logoData[pixelIndex + 2];
     }
+
+    // Write to the resulting image
+    resultData[pixelIndex + 0] = red;
+    resultData[pixelIndex + 1] = green;
+    resultData[pixelIndex + 2] = blue;
+    resultData[pixelIndex + 3] = 255;
   }
-}
 
-// Function to convert RGB to HSV
-function rgbToHsv(r, g, b) {
-  (r /= 255), (g /= 255), (b /= 255);
-  var max = Math.max(r, g, b),
-    min = Math.min(r, g, b);
-  var h,
-    s,
-    v = max;
-  var d = max - min;
-  s = max === 0 ? 0 : d / max;
-  if (max == min) {
-    h = 0; // achromatic
-  } else {
-    switch (max) {
-      case r:
-        h = (g - b) / d + (g < b ? 6 : 0);
-        break;
-      case g:
-        h = (b - r) / d + 2;
-        break;
-      case b:
-        h = (r - g) / d + 4;
-        break;
-    }
-    h /= 6;
-  }
-  return [h * 360, s * 100, v * 100];
+  // Add logo to the result in the top right corner
+  var logoCanvas = getLogoData(logoImageData);
+  
+  // Draw the resized logo in the top right corner of the result
+  var logoWidth = 100; // Size of logo
+  var logoHeight = 100;
+  var logoX = resultImageData.width - logoWidth; // Position in result
+  var logoY = 0;
+
+  // Draw the logo onto the result canvas
+  var resultCanvas = document.getElementById("result");
+  var resultContext = resultCanvas.getContext("2d");
+  resultContext.drawImage(logoCanvas, logoX, logoY, logoWidth, logoHeight);
 }

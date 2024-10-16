@@ -1,33 +1,47 @@
 <!DOCTYPE html>
-<html>
-<head>
-	<meta charset="UTF-8"/>
-	<title>RGB to Bitmap</title>
-</head>
-
-<body>
-	<canvas id="person" width="256" height="256"></canvas>
+<html lang="cs">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>cv 02 - klíčování - Šimon</title>
+  </head>
+  <body>
+    <canvas id="person" width="256" height="256"></canvas>
     <canvas id="background" width="256" height="256"></canvas>
     <canvas id="logo" width="256" height="256"></canvas>
     <canvas id="result" width="256" height="256"></canvas>
-	<br/>
-	<input type="file" id="file" onchange="handleFileSelect(this, 'person')" name="files[]"/>
-    <input type="file" id="file" onchange="handleFileSelect(this, 'background')" name="files[]"/>
-    <input type="file" id="file" onchange="handleFileSelect(this, 'logo')" name="files[]"/>
-	<label for="precision">Přesnost oříznutí člověka:</label>
-	<input type="number" id="precision" name="precision" min="0" max="100" value="40">
-    
-    <!-- vstup pro výběr barvy pozadí -->
-    <label for="bgColor">Barva pozadí:</label>
-    <input type="color" id="bgColor" name="bgColor" value="#4efc2d">
+    <br />
+    <input
+      type="file"
+      id="filePerson"
+      onchange="handleFileSelect(this, 'person')"
+      name="files[]"
+    />
+    <input
+      type="file"
+      id="fileBackground"
+      onchange="handleFileSelect(this, 'background')"
+      name="files[]"
+    />
+    <input
+      type="file"
+      id="fileLogo"
+      onchange="handleFileSelect(this, 'logo')"
+      name="files[]"
+    />
+    <label for="precision">Přesnost vyklíčování v procentech:</label>
+    <input
+      type="number"
+      id="precision"
+      name="precision"
+      min="0"
+      max="100"
+      value="62"
+    />
+    <label for="keyColor">Vyberte barvu pro odstranění (klíčování):</label>
+    <input type="color" id="keyColor" value="#26ff1c" />
 
-    <!-- vstup pro toleranci klíčování -->
-    <label for="tolerance">Tolerance klíčování:</label>
-    <input type="number" id="tolerance" name="tolerance" min="0" max="255" value="50">
-    
     <button type="button" id="convert" disabled>Convert</button>
-</body>
-
-<script type="text/javascript" src="./script.js"></script>
-
+  </body>
+  <script type="text/javascript" src="./script.js"></script>
 </html>

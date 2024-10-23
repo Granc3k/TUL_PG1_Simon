@@ -1,17 +1,52 @@
 <!DOCTYPE html>
-<html>
-<head>
-	<meta charset="UTF-8"/>
-	<title>RGB to Bitmap</title>
-</head>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>RGB to Bitmap - Šimon</title>
+  </head>
+  <body>
+    <canvas id="src" width="256" height="256"></canvas>
+    <br />
+    <input
+      type="file"
+      id="file"
+      onchange="handleFileSelect(this)"
+      name="files[]"
+    />
+    <button type="button" id="convert" disabled>Convert</button>
+    <br /><br />
 
-<body>
-	<canvas id="src" width="256" height="256"></canvas>
-	<br/>
-	<input type="file" id="file" onchange="handleFileSelect(this)" name="files[]"/>
-	<button type="button" id="convert" disabled>Convert</button>
-</body>
+    <label for="matrixSelect">Matice:</label>
+    <select id="matrixSelect">
+      <option value="2x2">2x2</option>
+      <option value="4x4">4x4</option>
+      <option value="8x8">8x8</option>
+    </select>
 
-<script type="text/javascript" src="./script.js"></script>
+    <br /><br />
 
+    <label for="kValue">k:</label>
+    <input type="range" id="kValue" min="0" max="1" step="0.01" value="1" />
+    <span id="kDisplay">1</span>
+
+    <br /><br />
+
+    <div>
+      <h3 id="label1">Výstup 1</h3>
+      <canvas id="outputCanvas1" width="256" height="256"></canvas>
+    </div>
+
+    <div>
+      <h3 id="label2">Výstup 2</h3>
+      <canvas id="outputCanvas2" width="256" height="256"></canvas>
+    </div>
+
+    <div>
+      <h3 id="label3">Výstup 3</h3>
+      <canvas id="outputCanvas3" width="256" height="256"></canvas>
+    </div>
+
+    <script type="text/javascript" src="./script.js"></script>
+  </body>
 </html>

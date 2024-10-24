@@ -1,17 +1,30 @@
 <!DOCTYPE html>
 <html>
-<head>
-	<meta charset="UTF-8"/>
-	<title>RGB to Bitmap</title>
-</head>
+  <head>
+    <meta charset="UTF-8" />
+    <title>RGB to Graphs - Šimon</title>
+  </head>
 
-<body>
-	<canvas id="src" width="256" height="256"></canvas>
-	<canvas id="histogram" width="256" height="256"></canvas>
-	<br/>
-	<input type="file" id="file" onchange="handleFileSelect(this)" name="files[]"/>
-</body>
+  <body>
+    <canvas id="src" width="256" height="256"></canvas>
+    <canvas id="histogram" width="256" height="256"></canvas>
+    <br />
+    <input
+      type="file"
+      id="file"
+      onchange="handleFileSelect(this)"
+      name="files[]"
+    />
+    <br />
+    <label for="channel">Select channel: </label>
+    <select id="channel" onchange="updateHistogram()">
+      <option value="all">All Channels</option>
+      <option value="red">Red</option>
+      <option value="green">Green</option>
+      <option value="blue">Blue</option>
+      <option value="gray">Gray (BT.601)</option>
+    </select>
+  </body>
 
-<script type="text/javascript" src="./script.js"></script>
-
+  <script type="text/javascript" src="./script.js"></script>
 </html>

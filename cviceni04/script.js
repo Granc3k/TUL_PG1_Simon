@@ -1,83 +1,151 @@
-// Callback function called, when file is "opened"
+let srcImageData = null; // global variable pro uchovani dat
+
 function handleFileSelect(item) {
-	var files = item.files;
+  var files = item.files;
 
-	console.log(files);
+  for (var i = 0; i < files.length; i++) {
+    if (!files[i].type.match("image.*")) continue;
 
-	for (var i = 0; i < files.length; i++) {
-		console.log(files[i], files[i].name, files[i].size, files[i].type);
+    var reader = new FileReader();
+    reader.onload = (function (file) {
+      return function (evt) {
+        var srcImg = new Image();
+        srcImg.src = evt.target.result;
+        srcImg.onload = function () {
+          var srcCanvas = document.getElementById("src");
+          var srcContext = srcCanvas.getContext("2d");
+          var histCanvas = document.getElementById("histogram");
 
-		// Only process image files.
-		if (!files[i].type.match('image.*')) {
-			continue;
-		}
+          // load a print histogramu
+          srcContext.drawImage(srcImg, 0, 0, srcCanvas.width, srcCanvas.height);
 
-		var reader = new FileReader();
+          // savnuti obrazovych dat
+          srcImageData = srcContext.getImageData(
+            0,
+            0,
+            srcCanvas.width,
+            srcCanvas.height
+          );
 
-		// Closure for loading image to memory
-		reader.onload = (function(file) {
-			return function(evt) {
+          // vytvoreni a print histogramu
+          updateHistogram();
+        };
+      };
+    })(files[i]);
 
-				var srcImg = new Image();
-				srcImg.src = evt.target.result;
+    reader.readAsDataURL(files[i]);
+    break;
+  }
+}
 
-				srcImg.onload = function() {
-					var srcCanvas = document.getElementById("src");
-					var srcContext = srcCanvas.getContext("2d");
-					var histCanvas = document.getElementById("histogram");
-					var histContext = histCanvas.getContext("2d");
-					
-					// Change size of canvas
-					srcCanvas.height = histCanvas.height = srcImg.height;
-					srcCanvas.width = histCanvas.width = srcImg.width;
+// vypocet histogramu
+function calculateHistogram(imageData, channel) {
+  var srcData = imageData.data;
+  var histogram = new Array(256).fill(0);
 
-					srcContext.drawImage(srcImg, 0, 0);
+  for (var i = 0; i < srcData.length; i += 4) {
+    var value;
 
-					var canvasHeight = srcCanvas.height;
-					var canvasWidth = srcCanvas.width;
-					var srcImageData = srcContext.getImageData(0, 0, canvasWidth, canvasHeight);
+    if (channel === "red") {
+      value = srcData[i];
+    } else if (channel === "green") {
+      value = srcData[i + 1];
+    } else if (channel === "blue") {
+      value = srcData[i + 2];
+    } else if (channel === "gray") {
+      value =
+        0.299 * srcData[i] + 0.587 * srcData[i + 1] + 0.114 * srcData[i + 2];
+    }
 
-					var histHeight = histCanvas.height;
-					var histWidth = histCanvas.width;
-					var histImageData = histContext.getImageData(0, 0, histWidth, histHeight);
+    histogram[Math.floor(value)]++;
+  }
 
-					convertImageData(srcImageData, histImageData);
+  return histogram;
+}
 
-					histContext.putImageData(histImageData, 0, 0);
-				}
-			}
-		})(files[i]);
+// update histogramu po zmene moznosti vykresleni
+function updateHistogram() {
+  if (!srcImageData) return;
 
-		reader.readAsDataURL(files[i]);
+  var histCanvas = document.getElementById("histogram");
+  var histContext = histCanvas.getContext("2d");
 
-		break;
-	};
-};
+  // getnuti moznosti printu
+  var channel = document.getElementById("channel").value;
 
+  if (channel === "all") {
+    // print vsech kanalu
+    drawAllHistograms(histContext);
+  } else {
+    // vypocet a print jednoho kanalu
+    var histogram = calculateHistogram(srcImageData, channel);
+    drawHistogram(histogram, histContext, channel);
+  }
+}
 
-// Function for converting raw data of image
-function convertImageData(srcImageData, histImageData) {
-	var srcData = srcImageData.data;
-	var histData = histImageData.data;
+// print histogramu
+function drawHistogram(histogram, context, channel) {
+  context.clearRect(0, 0, 256, 256);
+  var color;
 
-	// Go through the image using x,y coordinates
-	var red, green, blue, gray;
-	for (var pixelIndex = 0; pixelIndex < srcData.length; pixelIndex += 4) {
-		red   = srcData[pixelIndex + 0];
-		green = srcData[pixelIndex + 1];
-		blue  = srcData[pixelIndex + 2];
-		alpha = srcData[pixelIndex + 3];
+  switch (channel) {
+    case "red":
+      color = "red";
+      break;
+    case "green":
+      color = "green";
+      break;
+    case "blue":
+      color = "blue";
+      break;
+    case "gray":
+      color = "gray";
+      break;
+  }
 
-		if (pixelIndex < 100) {
-			console.log(red, green, blue, alpha);
-		}
+  var maxCount = Math.max(...histogram);
+  context.fillStyle = color;
 
-		// Do magic at this place :-)
+  for (var i = 0; i < histogram.length; i++) {
+    var barHeight = (histogram[i] / maxCount) * 256;
+    context.fillRect(i, 256 - barHeight, 1, barHeight);
+  }
+}
 
-		histData[pixelIndex + 0] = 255 - red;
-		histData[pixelIndex + 1] = 255 - green;
-		histData[pixelIndex + 2] = 255 - blue;
-		histData[pixelIndex + 3] = alpha;
-	}	
-};
+// print vsech histogramu do jednoho
+function drawAllHistograms(context) {
+  context.clearRect(0, 0, 256, 256);
+  var colors = ["red", "green", "blue", "gray"];
+  var maxCounts = [];
 
+  // vypocet histogramu pro všechny kanaly
+  var redHist = calculateHistogram(srcImageData, "red");
+  var greenHist = calculateHistogram(srcImageData, "green");
+  var blueHist = calculateHistogram(srcImageData, "blue");
+  var grayHist = calculateHistogram(srcImageData, "gray");
+
+  var histograms = [redHist, greenHist, blueHist, grayHist];
+
+  // Najít maximální hodnotu pro každý histogram, aby se daly normalizovat
+  for (var h of histograms) {
+    maxCounts.push(Math.max(...h));
+  }
+
+  // nastaveni aplhy pro pruhlednost
+  context.globalAlpha = 0.8;
+
+  // print kazdeho kanalu
+  for (var i = 0; i < histograms.length; i++) {
+    var histogram = histograms[i];
+    var color = colors[i];
+    context.fillStyle = color;
+
+    for (var j = 0; j < histogram.length; j++) {
+      var barHeight = (histogram[j] / maxCounts[i]) * 256;
+      context.fillRect(j, 256 - barHeight, 1, barHeight);
+    }
+  }
+
+  // vraceni puvodni hodnoty pruhlednosti
+  context.globalAlpha = 1.0;
+}

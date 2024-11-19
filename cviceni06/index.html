@@ -3,12 +3,18 @@
 <head>
 	<meta charset="UTF-8" />
 	<title>WebGL Cube (texture and shading)</title>
-	<script type="text/javascript" src="./node_modules/gl-matrix/dist/gl-matrix-min.js"></script>
+	<script type="text/javascript" src="./gl-matrix-min.js"></script>
 	<script type="text/javascript" src="./script.js"></script>
 </head>
 <body>
 
 <canvas width="512" height="512" id="webgl_canvas"></canvas>
+
+<label for="verticalSegments">Vertikální jemnost:</label>
+<input type="number" id="verticalSegments" value="15" min="3" max="50">
+<label for="horizontalSegments">Horizontální jemnost:</label>
+<input type="number" id="horizontalSegments" value="15" min="3" max="50">
+<button id="updateButton">Aktualizovat</button>
 
 <script id="vs" type="x-shader/x-vertex">
 uniform mat4 modelMatrix;

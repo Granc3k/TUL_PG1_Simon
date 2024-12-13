@@ -1,120 +1,243 @@
-window.onload = function() {
-	var stats;
+// Vaše původní inicializace a proměnné
+var stats;
+var camera, controls, scene, renderer;
 
-	var camera, controls, scene, parent, obj, cube, box, renderer;
+// Nové herní objekty
+var paddle1, paddle2, ball, table;
+var globalPaddleSpeed = 0.2; // Rychlost pálek
+var globalBallSpeed = 0.05;  // Základní rychlost míčku
+var ballSpeed = { x: globalBallSpeed, y: globalBallSpeed };
+var ballDirection = { x: 1, y: 1 };
 
-	var dy = 0.01;
-	var dx = 0.02;
+// Skóre
+var scorePlayer1 = 0;
+var scorePlayer2 = 0;
 
-	init();
-	animate();
+// Stavové proměnné pro pohyb pálek
+let paddle1MovingUp = false;
+let paddle1MovingDown = false;
+let paddle2MovingUp = false;
+let paddle2MovingDown = false;
 
-	function init() {
+// Funkce inicializace scény
+function init() {
+    // Kamera
+    camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 1, 1000);
+    camera.position.z = 6;
 
-		camera = new THREE.PerspectiveCamera( 60, window.innerWidth / window.innerHeight, 1, 1000 );
-		camera.position.z = 5.0;
+    // Ovládání
+    controls = new THREE.TrackballControls(camera);
+    controls.rotateSpeed = 4.0;
+    controls.zoomSpeed = 1.2;
+    controls.panSpeed = 0.8;
 
-		controls = new THREE.TrackballControls( camera );
-		controls.rotateSpeed = 4.0;
-		controls.zoomSpeed = 1.2;
-		controls.panSpeed = 0.8;
-		controls.noZoom = false;
-		controls.noPan = false;
-		controls.staticMoving = true;
-		controls.dynamicDampingFactor = 0.3;
-		controls.keys = [ 65, 83, 68 ];
-		controls.addEventListener( 'change', render );
+    // Scéna
+    scene = new THREE.Scene();
 
-		// Create scene hierarchy
-		scene = new THREE.Scene();
-		parent = new THREE.Object3D();
-		obj = new THREE.Object3D();
-		box = new THREE.Object3D();
-		parent.add(obj);
-		scene.add( parent );
+    // Pozadí scény
+    scene.background = new THREE.Color(0x333333);
 
-		// Add helper object (bounding box)
-		var box_geometry = new THREE.BoxGeometry( 3.01, 3.01, 1.01 );
-		var box_mesh = new THREE.Mesh(box_geometry, null);
-		var bbox = new THREE.BoundingBoxHelper( box_mesh, 0xffffff );
-		bbox.update();
-		scene.add(bbox);
+    // Renderer
+    renderer = new THREE.WebGLRenderer();
+    renderer.setPixelRatio(window.devicePixelRatio);
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    document.body.appendChild(renderer.domElement);
 
-		// Instantiate a loader
-		var loader = new THREE.TextureLoader();
-		// Load a resource
-		loader.load(
-			// URL of texture
-			'textures/wood_texture_simple.png',
-			// Function when resource is loaded
-			function ( texture ) {
-				// Create objects using texture
-				var cube_geometry = new THREE.BoxGeometry( 1, 1, 1 );
-				var tex_material = new THREE.MeshBasicMaterial( {
-					map: texture
-				} );
+    // Statistiky
+    stats = new Stats();
+    stats.domElement.style.position = 'absolute';
+    stats.domElement.style.top = '0px';
+    document.body.appendChild(stats.domElement);
 
-				cube = new THREE.Mesh( cube_geometry, tex_material );
-				obj.add( cube );
+    // Přidání herních prvků
+    addGameElements();
 
-				// Call render here, because loading of texture can
-				// take lot of time
-				render();
-			},
-			// Function called when download progresses
-			function ( xhr ) {
-				console.log( (xhr.loaded / xhr.total * 100) + '% loaded' );
-			},
-			// Function called when download errors
-			function ( xhr ) {
-				console.log( 'An error happened' );
-			}
-		);
+    // Přidání skóre
+    addScoreDisplay();
 
-		// Display statistics of drawing to canvas
-		stats = new Stats();
-		stats.domElement.style.position = 'absolute';
-		stats.domElement.style.top = '0px';
-		stats.domElement.style.zIndex = 100;
-		document.body.appendChild( stats.domElement );
-
-		// renderer
-		renderer = new THREE.WebGLRenderer();
-		renderer.setPixelRatio( window.devicePixelRatio );
-		renderer.setSize( window.innerWidth, window.innerHeight );
-		document.body.appendChild( renderer.domElement );
-
-		window.addEventListener( 'resize', onWindowResize, false );
-	}
-
-	function onWindowResize() {
-		camera.aspect = window.innerWidth / window.innerHeight;
-		camera.updateProjectionMatrix();
-		renderer.setSize( window.innerWidth, window.innerHeight );
-		controls.handleResize();
-		render();
-	}
-
-	function animate() {
-		requestAnimationFrame( animate );
-		// Test of object animation
-		if (cube.position.y >= 1.0 || cube.position.y <= -1.0) {
-			dy = -dy;
-		};
-		cube.position.y += dy;
-		if (obj.position.x >= 1.0 || obj.position.x <= -1.0) {
-			dx = -dx;
-		};
-		obj.position.x += dx;
-		// Update position of camera
-		controls.update();
-		// Render scene
-		render();
-	}
-
-	function render() {
-		renderer.render( scene, camera );
-		// Update draw statistics
-		stats.update();
-	}
+    // Posluchače událostí
+    window.addEventListener('resize', onWindowResize, false);
 }
+
+// Herní prvky
+function addGameElements() {
+    // Textura hrací plochy
+    const textureLoader = new THREE.TextureLoader();
+    const tableTexture = textureLoader.load(
+        '../textures/table.jpg', // Cesta k textuře
+        function (texture) {
+            console.log("Textura úspěšně načtena:", texture);
+        },
+        undefined,
+        function (err) {
+            console.error("Chyba při načítání textury:", err);
+        }
+    );
+
+    // Hrací plocha (stůl)
+    var tableGeometry = new THREE.PlaneGeometry(10, 5); // Šířka a výška hrací plochy
+    var tableMaterial = new THREE.MeshBasicMaterial({ map: tableTexture, side: THREE.DoubleSide });
+    table = new THREE.Mesh(tableGeometry, tableMaterial);
+    table.rotation.y = Math.PI / 2; // Otočení stolu o 90 stupňů kolem osy Y
+    table.position.z = 0; // Střed stolu
+    table.position.x = 0; // Udržet uprostřed scény
+    scene.add(table);
+
+    // Pálka hráče 1
+    var paddleGeometry = new THREE.BoxGeometry(1, 0.2, 0.2); // Upravená velikost
+    var paddleMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
+    paddle1 = new THREE.Mesh(paddleGeometry, paddleMaterial);
+    paddle1.position.set(0, 0, -4.5); // Umístění pálky na levou stranu
+    paddle1.rotation.y = Math.PI / 2; // Otočení pálky
+    scene.add(paddle1);
+
+    // Pálka hráče 2
+    paddle2 = new THREE.Mesh(paddleGeometry, paddleMaterial);
+    paddle2.position.set(0, 0, 4.5); // Umístění pálky na pravou stranu
+    paddle2.rotation.y = Math.PI / 2; // Otočení pálky
+    scene.add(paddle2);
+
+    // Míček
+    var ballGeometry = new THREE.SphereGeometry(0.2, 32, 32);
+    var ballMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff });
+    ball = new THREE.Mesh(ballGeometry, ballMaterial);
+    ball.position.set(0, 0, 0); // Výchozí pozice uprostřed
+    scene.add(ball);
+}
+
+
+
+// Přidání skóre
+function addScoreDisplay() {
+    const scoreDiv = document.createElement('div');
+    scoreDiv.id = 'score';
+    scoreDiv.style.position = 'absolute';
+    scoreDiv.style.top = '10px';
+    scoreDiv.style.left = '50%';
+    scoreDiv.style.transform = 'translateX(-50%)';
+    scoreDiv.style.color = 'white';
+    scoreDiv.style.fontSize = '24px';
+    scoreDiv.style.fontFamily = 'Arial, sans-serif';
+    scoreDiv.style.zIndex = 100;
+    scoreDiv.innerHTML = `Player 1: ${scorePlayer1} | Player 2: ${scorePlayer2}`;
+    document.body.appendChild(scoreDiv);
+}
+
+// Aktualizace skóre
+function updateScore() {
+    const scoreDiv = document.getElementById('score');
+    scoreDiv.innerHTML = `Player 1: ${scorePlayer1} | Player 2: ${scorePlayer2}`;
+}
+
+// Herní logika
+function updateGame() {
+    // Pohyb pálky hráče 1
+    if (paddle1MovingUp && paddle1.position.y < 2.5) {
+        paddle1.position.y += globalPaddleSpeed;
+    }
+    if (paddle1MovingDown && paddle1.position.y > -2.5) {
+        paddle1.position.y -= globalPaddleSpeed;
+    }
+
+    // Pohyb pálky hráče 2
+    if (paddle2MovingUp && paddle2.position.y < 2.5) {
+        paddle2.position.y += globalPaddleSpeed;
+    }
+    if (paddle2MovingDown && paddle2.position.y > -2.5) {
+        paddle2.position.y -= globalPaddleSpeed;
+    }
+
+    // Pohyb míčku
+    ball.position.x += ballSpeed.x * ballDirection.x;
+    ball.position.y += ballSpeed.y * ballDirection.y;
+
+    // Odrážení od hran
+    if (ball.position.y > 2.5 || ball.position.y < -2.5) {
+        ballDirection.y *= -1;
+    }
+
+    // Kolize s pálkami
+    if (
+        (ball.position.x < -4.3 && ball.position.y < paddle1.position.y + 0.5 && ball.position.y > paddle1.position.y - 0.5) ||
+        (ball.position.x > 4.3 && ball.position.y < paddle2.position.y + 0.5 && ball.position.y > paddle2.position.y - 0.5)
+    ) {
+        ballDirection.x *= -1;
+    }
+
+    // Skórování
+    if (ball.position.x < -5) {
+        scorePlayer2++;
+        updateScore();
+        resetBall();
+    } else if (ball.position.x > 5) {
+        scorePlayer1++;
+        updateScore();
+        resetBall();
+    }
+}
+
+// Reset míčku
+function resetBall() {
+    ball.position.set(0, 0, 0);
+    ballDirection.x *= -1;
+}
+
+// Ovládání
+document.addEventListener('keydown', (event) => {
+    switch (event.key) {
+        case 'w':
+            paddle1MovingUp = true;
+            break;
+        case 's':
+            paddle1MovingDown = true;
+            break;
+        case 'ArrowUp':
+            paddle2MovingUp = true;
+            break;
+        case 'ArrowDown':
+            paddle2MovingDown = true;
+            break;
+    }
+});
+
+document.addEventListener('keyup', (event) => {
+    switch (event.key) {
+        case 'w':
+            paddle1MovingUp = false;
+            break;
+        case 's':
+            paddle1MovingDown = false;
+            break;
+        case 'ArrowUp':
+            paddle2MovingUp = false;
+            break;
+        case 'ArrowDown':
+            paddle2MovingDown = false;
+            break;
+    }
+});
+
+// Animace
+function animate() {
+    requestAnimationFrame(animate);
+    updateGame();
+    controls.update();
+    render();
+}
+
+// Renderování
+function render() {
+    renderer.render(scene, camera);
+    stats.update();
+}
+
+// Změna velikosti okna
+function onWindowResize() {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+}
+
+// Spuštění aplikace
+init();
+animate();

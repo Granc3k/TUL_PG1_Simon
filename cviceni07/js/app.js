@@ -4,8 +4,8 @@ var camera, controls, scene, renderer;
 
 // Nové herní objekty
 var paddle1, paddle2, ball, table;
-var globalPaddleSpeed = 0.2; // Rychlost pálek
-var globalBallSpeed = 0.05;  // Základní rychlost míčku
+var globalPaddleSpeed = 0.1; // Rychlost pálek
+var globalBallSpeed = 0.03;  // Základní rychlost míčku
 var ballSpeed = { x: globalBallSpeed, y: globalBallSpeed };
 var ballDirection = { x: 1, y: 1 };
 
@@ -22,7 +22,7 @@ let paddle2MovingDown = false;
 // Funkce inicializace scény
 function init() {
     // Kamera
-    camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 1, 1000);
+    camera = new THREE.PerspectiveCamera(100, window.innerWidth / window.innerHeight, 1, 1000);
     camera.position.z = 6;
 
     // Ovládání
@@ -58,53 +58,90 @@ function init() {
     // Posluchače událostí
     window.addEventListener('resize', onWindowResize, false);
 }
-
-// Herní prvky
 function addGameElements() {
     // Textura hrací plochy
     const textureLoader = new THREE.TextureLoader();
-    const tableTexture = textureLoader.load(
-        '../textures/table.jpg', // Cesta k textuře
-        function (texture) {
-            console.log("Textura úspěšně načtena:", texture);
-        },
-        undefined,
-        function (err) {
-            console.error("Chyba při načítání textury:", err);
-        }
-    );
+    let tableTexture;
+    try {
+        tableTexture = textureLoader.load(
+            './textures/table.jpg', // Cesta k textuře
+            function (texture) {
+                console.log("Textura úspěšně načtena:", texture);
+            },
+            undefined,
+            function (err) {
+                console.error("Chyba při načítání textury:", err);
+            }
+        );
+    } catch (error) {
+        console.error("Textura nebyla načtena, bude použita defaultní modrá barva.");
+        tableTexture = null;
+    }
+
+    // Pokud textura není načtena, použijeme modrou barvu
+    const tableMaterial = tableTexture
+        ? new THREE.MeshBasicMaterial({ map: tableTexture, side: THREE.DoubleSide })
+        : new THREE.MeshBasicMaterial({ color: 0x0000ff, side: THREE.DoubleSide });
 
     // Hrací plocha (stůl)
-    var tableGeometry = new THREE.PlaneGeometry(10, 5); // Šířka a výška hrací plochy
-    var tableMaterial = new THREE.MeshBasicMaterial({ map: tableTexture, side: THREE.DoubleSide });
-    table = new THREE.Mesh(tableGeometry, tableMaterial);
-    table.rotation.y = Math.PI / 2; // Otočení stolu o 90 stupňů kolem osy Y
-    table.position.z = 0; // Střed stolu
-    table.position.x = 0; // Udržet uprostřed scény
+    var tableGeometry = new THREE.PlaneBufferGeometry(10, 5); // Velikost hrací plochy
+    var table = new THREE.Mesh(tableGeometry, tableMaterial);
+    table.rotation.x = -Math.PI / 2; // Orientace plochy horizontálně (X-Z)
+    table.position.y = -0.6; // Posun hrací plochy dolů
     scene.add(table);
 
+    // Skupina pro herní prvky (box, pálky, míček)
+    const gameGroup = new THREE.Group();
+
     // Pálka hráče 1
-    var paddleGeometry = new THREE.BoxGeometry(1, 0.2, 0.2); // Upravená velikost
+    var paddleGeometry = new THREE.BoxGeometry(0.2, 1, 0.2); // Vertikální pálky
     var paddleMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
     paddle1 = new THREE.Mesh(paddleGeometry, paddleMaterial);
-    paddle1.position.set(0, 0, -4.5); // Umístění pálky na levou stranu
-    paddle1.rotation.y = Math.PI / 2; // Otočení pálky
-    scene.add(paddle1);
+    paddle1.position.set(-4.5, 0, 0); // Umístění na levé straně
+    gameGroup.add(paddle1);
 
     // Pálka hráče 2
     paddle2 = new THREE.Mesh(paddleGeometry, paddleMaterial);
-    paddle2.position.set(0, 0, 4.5); // Umístění pálky na pravou stranu
-    paddle2.rotation.y = Math.PI / 2; // Otočení pálky
-    scene.add(paddle2);
+    paddle2.position.set(4.5, 0, 0); // Umístění na pravé straně
+    gameGroup.add(paddle2);
 
     // Míček
     var ballGeometry = new THREE.SphereGeometry(0.2, 32, 32);
     var ballMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff });
     ball = new THREE.Mesh(ballGeometry, ballMaterial);
-    ball.position.set(0, 0, 0); // Výchozí pozice uprostřed
-    scene.add(ball);
-}
+    ball.position.set(0, 0, 0); // Výchozí pozice ve středu
+    gameGroup.add(ball);
 
+    // Viditelné hrany boxu
+    var boxGeometry = new THREE.BoxGeometry(10, 5, 1); // Upravené rozměry boxu
+    var boxMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff, wireframe: true });
+    var borderBox = new THREE.Mesh(boxGeometry, boxMaterial);
+    borderBox.position.set(0, 0, 0); // Umístění boxu kolem herních prvků
+    gameGroup.add(borderBox);
+
+    // Oblasti skórování (logika pouze bez vizualizace)
+    const goalZone1 = {
+        xMin: -5.1,
+        xMax: -4.9,
+        yMin: -2.5,
+        yMax: 2.5
+    };
+
+    const goalZone2 = {
+        xMin: 4.9,
+        xMax: 5.1,
+        yMin: -2.5,
+        yMax: 2.5
+    };
+
+    // Ukládáme logické hranice pro použití v logice
+    gameGroup.goalZones = { goalZone1, goalZone2 };
+
+    // Otočení celé herní skupiny
+    gameGroup.rotation.x = -Math.PI / 2; // Otočení celého boxu, aby odpovídal textuře
+    gameGroup.position.y = 0; // Udržení ve správné výšce
+    scene.add(gameGroup);
+}
 
 
 // Přidání skóre
@@ -128,8 +165,6 @@ function updateScore() {
     const scoreDiv = document.getElementById('score');
     scoreDiv.innerHTML = `Player 1: ${scorePlayer1} | Player 2: ${scorePlayer2}`;
 }
-
-// Herní logika
 function updateGame() {
     // Pohyb pálky hráče 1
     if (paddle1MovingUp && paddle1.position.y < 2.5) {
@@ -158,10 +193,23 @@ function updateGame() {
 
     // Kolize s pálkami
     if (
-        (ball.position.x < -4.3 && ball.position.y < paddle1.position.y + 0.5 && ball.position.y > paddle1.position.y - 0.5) ||
-        (ball.position.x > 4.3 && ball.position.y < paddle2.position.y + 0.5 && ball.position.y > paddle2.position.y - 0.5)
+        ball.position.x < paddle1.position.x + 0.2 && // Kontrola přední hrany levé pálky
+        ball.position.x > paddle1.position.x &&      // Míček nesmí být za levou pálkou
+        ball.position.y < paddle1.position.y + 0.6 && 
+        ball.position.y > paddle1.position.y - 0.6
     ) {
-        ballDirection.x *= -1;
+        ballDirection.x *= -1; // Odrážení
+        ball.position.x = paddle1.position.x + 0.21; // Posun míčku mimo pálku
+    }
+
+    if (
+        ball.position.x > paddle2.position.x - 0.2 && // Kontrola přední hrany pravé pálky
+        ball.position.x < paddle2.position.x &&      // Míček nesmí být za pravou pálkou
+        ball.position.y < paddle2.position.y + 0.6 &&
+        ball.position.y > paddle2.position.y - 0.6
+    ) {
+        ballDirection.x *= -1; // Odrážení
+        ball.position.x = paddle2.position.x - 0.21; // Posun míčku mimo pálku
     }
 
     // Skórování
@@ -175,6 +223,7 @@ function updateGame() {
         resetBall();
     }
 }
+
 
 // Reset míčku
 function resetBall() {

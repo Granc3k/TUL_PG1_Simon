@@ -1,52 +1,77 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pong Game Menu</title>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Pong Game Menu - Šimon</title>
     <style>
-        body {
-            margin: 0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            background-color: #333;
-            color: white;
-            font-family: Arial, sans-serif;
-        }
-        #menu {
-            text-align: center;
-        }
-        button {
-            margin: 10px;
-            padding: 10px 20px;
-            font-size: 16px;
-            cursor: pointer;
-        }
-        input {
-            margin-top: 10px;
-            padding: 5px;
-            font-size: 14px;
-        }
+      body {
+        margin: 0;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        background-color: #333;
+        color: white;
+        font-family: Arial, sans-serif;
+      }
+      #menu {
+        text-align: center;
+      }
+      button {
+        margin: 10px;
+        padding: 10px 20px;
+        font-size: 16px;
+        cursor: pointer;
+      }
+      input[type="number"] {
+        margin-top: 10px;
+        padding: 5px;
+        font-size: 14px;
+        width: 60px;
+      }
+      .checkbox-group {
+        margin-top: 20px;
+        text-align: left;
+        display: inline-block;
+      }
+      label {
+        font-size: 14px;
+        cursor: pointer;
+      }
+      input[type="checkbox"] {
+        margin-right: 5px;
+      }
     </style>
-</head>
-<body>
+  </head>
+  <body>
     <div id="menu">
-        <h1>Pong Game</h1>
-        <button onclick="startGame('1v1')">1 vs 1</button>
-        <button onclick="startGame('1vAI')">1 vs AI</button>
-        <div>
-            <label for="scoreLimit">Score Limit:</label>
-            <input type="number" id="scoreLimit" value="10" min="1">
-        </div>
+      <h1>Pong Game</h1>
+      <button onclick="startGame('1v1')">1 vs 1</button>
+      <button onclick="startGame('1vAI')">1 vs AI</button>
+      <div>
+        <label for="scoreLimit">Score Limit:</label>
+        <input type="number" id="scoreLimit" value="10" min="1" />
+      </div>
+      <div class="checkbox-group">
+        <label> <input type="checkbox" id="debugMode" /> Debug Mode </label>
+      </div>
+      <div class="checkbox-group">
+        <label>
+          <input type="checkbox" id="soundEnabled" checked /> Enable Sound
+        </label>
+      </div>
     </div>
 
     <script>
-        function startGame(mode) {
-            const scoreLimit = document.getElementById('scoreLimit').value;
-            window.location.href = `app.html?mode=${mode}&scoreLimit=${scoreLimit}`;
-        }
+      function startGame(mode) {
+        const scoreLimit = document.getElementById("scoreLimit").value;
+        const debugMode = document.getElementById("debugMode").checked;
+        const soundEnabled = document.getElementById("soundEnabled").checked;
+
+        // Přesměrování na app.html s parametry
+        window.location.href = `app.html?mode=${mode}&scoreLimit=${scoreLimit}&debugMode=${debugMode}&soundEnabled=${soundEnabled}`;
+      }
     </script>
-</body>
+  </body>
 </html>

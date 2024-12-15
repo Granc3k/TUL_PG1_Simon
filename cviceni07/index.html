@@ -54,9 +54,6 @@
         <input type="number" id="scoreLimit" value="10" min="1" />
       </div>
       <div class="checkbox-group">
-        <label> <input type="checkbox" id="debugMode" /> Debug Mode </label>
-      </div>
-      <div class="checkbox-group">
         <label>
           <input type="checkbox" id="soundEnabled" checked /> Enable Sound
         </label>
@@ -66,11 +63,10 @@
     <script>
       function startGame(mode) {
         const scoreLimit = document.getElementById("scoreLimit").value;
-        const debugMode = document.getElementById("debugMode").checked;
         const soundEnabled = document.getElementById("soundEnabled").checked;
 
         // Přesměrování na app.html s parametry
-        window.location.href = `app.html?mode=${mode}&scoreLimit=${scoreLimit}&debugMode=${debugMode}&soundEnabled=${soundEnabled}`;
+        window.location.href = `app.html?mode=${mode}&scoreLimit=${scoreLimit}&soundEnabled=${soundEnabled}`;
       }
     </script>
   </body>

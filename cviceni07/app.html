@@ -15,10 +15,11 @@
   </head>
   <body>
     <script>
-      // Parse URL parameters
+      // Parse URL params
       const urlParams = new URLSearchParams(window.location.search);
       window.gameModeParam = urlParams.get("mode") || "1v1";
       window.scoreLimitParam = parseInt(urlParams.get("scoreLimit")) || 10;
+      window.soundEnabled = urlParams.get("soundEnabled") === "true";
     </script>
     <script src="js/three.min.js"></script>
     <script src="js/TrackballControls.js"></script>

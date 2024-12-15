@@ -9,10 +9,17 @@ let ballDirection = { x: 1, y: 1 };
 let ballSpeed = 0.03;
 let ballSpeedIncrement = 0.005; // Zrychlení míčku při každém odrazu
 let isPaused = false; // state pauzy
+let soundEnabled = window.soundEnabled || false;
 
 // Sound efekty
 let paddleHitSound = new Audio("sounds/bounce.mp3");
 let winSound = new Audio("sounds/win.mp3");
+
+function playSound(sound) {
+  if (soundEnabled) {
+    sound.play();
+  }
+}
 
 // Herní parametry z URL
 let gameMode = window.gameModeParam || "1v1";
@@ -242,7 +249,7 @@ function moveBall() {
     ballDirection.x *= -1;
     ball.position.x = paddle1.position.x + 0.31;
     ballSpeed += ballSpeedIncrement; // Zrychlení míčku
-    paddleHitSound.play(); // Zvuk při odrazu od levé pálky
+    playSound(paddleHitSound); // Zvuk při odrazu od levé pálky
   }
 
   if (
@@ -254,7 +261,7 @@ function moveBall() {
     ballDirection.x *= -1;
     ball.position.x = paddle2.position.x - 0.31;
     ballSpeed += ballSpeedIncrement; // Zrychlení míčku
-    paddleHitSound.play(); // Zvuk při odrazu od pravé pálky
+    playSound(paddleHitSound); // Zvuk při odrazu od pravé pálky
   }
 
   // Skórování
@@ -277,11 +284,11 @@ function resetBall() {
 
 function checkGameEnd() {
   if (scorePlayer1 >= scoreLimit) {
-    winSound.play(); // Zvuk při vítězství
+    playSound(winSound); // Zvuk při vítězství
     alert("Player 1 wins!");
     window.location.href = "index.html"; // Přesměrování na menu
   } else if (scorePlayer2 >= scoreLimit) {
-    winSound.play(); // Zvuk při vítězství
+    playSound(winSound); // Zvuk při vítězství
     alert("Player 2 wins!");
     window.location.href = "index.html";
   }

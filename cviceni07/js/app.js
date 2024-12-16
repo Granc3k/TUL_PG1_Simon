@@ -71,7 +71,7 @@ function createGameElements() {
   });
   const table = new THREE.Mesh(tableGeometry, tableMaterial);
   table.rotation.x = 0;
-  table.position.z = -2; // Posunutí plochy dozadu
+  table.position.z = -0.2; // Posunutí plochy dozadu
   scene.add(table);
 
   // Pálky
@@ -196,11 +196,11 @@ let paddle2MovingDown = false;
 
 function movePaddles() {
   // Pohyb pálkami
-  if (paddle1MovingUp && paddle1.position.y < 2.5) paddle1.position.y += 0.1;
-  if (paddle1MovingDown && paddle1.position.y > -2.5) paddle1.position.y -= 0.1;
+  if (paddle1MovingUp && paddle1.position.y < 3.5) paddle1.position.y += 0.1;
+  if (paddle1MovingDown && paddle1.position.y > -3.5) paddle1.position.y -= 0.1;
   if (gameMode === "1v1") {
-    if (paddle2MovingUp && paddle2.position.y < 2.5) paddle2.position.y += 0.1;
-    if (paddle2MovingDown && paddle2.position.y > -2.5)
+    if (paddle2MovingUp && paddle2.position.y < 3.5) paddle2.position.y += 0.1;
+    if (paddle2MovingDown && paddle2.position.y > -3.5)
       paddle2.position.y -= 0.1;
   } else if (gameMode === "1vAI") {
     moveAI();
@@ -235,7 +235,7 @@ function moveBall() {
   ball.position.y += ballSpeed * ballDirection.y;
 
   // Kontrola kolizí s hranami
-  if (ball.position.y > 2.5 || ball.position.y < -2.5) {
+  if (ball.position.y > 4 || ball.position.y < -4) {
     ballDirection.y *= -1;
   }
 
@@ -265,11 +265,11 @@ function moveBall() {
   }
 
   // Skórování
-  if (ball.position.x < -5) {
+  if (ball.position.x < -6) {
     scorePlayer2++;
     updateScore();
     resetBall();
-  } else if (ball.position.x > 5) {
+  } else if (ball.position.x > 6) {
     scorePlayer1++;
     updateScore();
     resetBall();
